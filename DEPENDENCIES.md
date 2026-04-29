@@ -76,5 +76,5 @@ npm start:v2  # Should run without errors
 ```
 
 Both should display:
-- ✅ Connected to SQLite database
-- ✅ Server running on http://localhost:PORT
+-  Connected to SQLite database
+-  Server running on http://localhost:PORT

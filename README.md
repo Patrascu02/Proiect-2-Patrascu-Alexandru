@@ -7,7 +7,7 @@
 
 ---
 
-## 📋 Project Overview
+##  Project Overview
 
 This project implements a real-world scenario where an internal authentication system is built with intentional security vulnerabilities (v1.0), then exploited and fixed (v2.0).
 
@@ -24,38 +24,38 @@ This project implements a real-world scenario where an internal authentication s
 
 ---
 
-## ✅ Implemented Features
+##  Implemented Features
 
 ### Mandatory Requirements (per specification)
 
 #### 3.1 - User Registration (Register)
-- ✅ Form with email/username + password
-- ✅ Database storage (SQLite)
-- ✅ Role assignment (USER)
-- ✅ Input validation in backend
+-  Form with email/username + password
+-  Database storage (SQLite)
+- Role assignment (USER)
+-  Input validation in backend
 
 #### 3.2 - Authentication (Login)
-- ✅ Credential verification
-- ✅ Session/Cookie creation
-- ✅ Session transmission to client
-- ✅ Maintains authentication between requests
+-  Credential verification
+-  Session/Cookie creation
+-  Session transmission to client
+-  Maintains authentication between requests
 
 #### 3.3 - Logout
-- ✅ Session invalidation
-- ✅ Cookie deletion
+- Session invalidation
+-  Cookie deletion
 
 #### 3.4 - Password Reset (Forgot Password)
-- ✅ Reset token generation
-- ✅ Token endpoint
-- ✅ New password setting
+-  Reset token generation
+-  Token endpoint
+-  New password setting
 
 #### 3.5 - Session Management
-- ✅ User identification
-- ✅ Request association
+- User identification
+-  Request association
 
 ---
 
-## 🔓 V1 - Vulnerabilities (Intentional)
+##  V1 - Vulnerabilities (Intentional)
 
 ### 1. Weak Password Policy
 - Minimum 3 characters
@@ -95,7 +95,7 @@ This project implements a real-world scenario where an internal authentication s
 
 ---
 
-## 🔒 V2 - Security Fixes (Applied)
+##  V2 - Security Fixes (Applied)
 
 ### 1. Strong Password Policy
 - Minimum 12 characters
@@ -140,7 +140,7 @@ This project implements a real-world scenario where an internal authentication s
 
 ---
 
-## 🚀 Quick Start
+##  Quick Start
 
 ### Prerequisites
 ```bash
@@ -169,8 +169,8 @@ npm start:v1
 
 **Output:**
 ```
-🔓 AuthX V1 (VULNERABLE) running on http://localhost:3001
-⚠️  WARNING: This version has intentional security vulnerabilities!
+ AuthX V1 (VULNERABLE) running on http://localhost:3001
+  WARNING: This version has intentional security vulnerabilities!
 ```
 
 Access at: **http://localhost:3001**
@@ -183,15 +183,15 @@ npm start:v2
 
 **Output:**
 ```
-🔒 AuthX V2 (SECURE) running on http://localhost:3002
-✅ All security fixes implemented
+ AuthX V2 (SECURE) running on http://localhost:3002
+ All security fixes implemented
 ```
 
 Access at: **http://localhost:3002**
 
 ---
 
-## 🧪 Testing Guide
+##  Testing Guide
 
 ### Test Accounts (V1 - Weak Password)
 
@@ -212,12 +212,12 @@ After creating these, you can use them to demonstrate vulnerabilities:
 #### V1 - Test Weak Password:
 1. Go to V1 Register page
 2. Create account with password: `a` (3 characters)
-3. Registration succeeds ❌
+3. Registration succeeds 
 
 #### V2 - Test Strong Password:
 1. Go to V2 Register page
 2. Try password: `a`
-3. Shows requirements not met ✅
+3. Shows requirements not met 
 
 #### V1 - Test User Enumeration:
 ```bash
@@ -281,19 +281,19 @@ curl -X POST http://localhost:3001/api/reset-password \
 curl -X POST http://localhost:3001/api/reset-password \
   -H "Content-Type: application/json" \
   -d '{"token":"1","newPassword":"anotherpass123"}'
-# Response: 200 OK (token reused! ❌)
+# Response: 200 OK (token reused! )
 ```
 
 #### V2 - Test One-Time Token:
 ```bash
 # Same flow...
-# First use: 200 OK ✅
-# Second use: 400 Bad Request (token marked as used) ✅
+# First use: 200 OK 
+# Second use: 400 Bad Request (token marked as used) 
 ```
 
 ---
 
-## 📁 Project Structure
+##  Project Structure
 
 ```
 /Proiect-2-Patrascu-Alexandru/
@@ -312,22 +312,19 @@ curl -X POST http://localhost:3001/api/reset-password \
 
 ---
 
-## 📊 Deliverables Checklist
+## Deliverables Checklist
 
-### ✅ Código Fonte (Source Code)
+###  (Source Code)
 - [x] Aplicação completa funcional (Both v1 and v2)
 - [x] Duas versões distintas (vulnerable and fixed)
 - [x] Estrutura clara do projeto
 - [x] Sem código duplicado desnecessário
 
-### ✅ Relatório de Segurança (Security Report)
-- [x] Descrição de cada vulnerabilidade ([SECURITY_REPORT.md](SECURITY_REPORT.md))
-- [x] Passos de exploração (PoC detalhados)
-- [x] Impacto da vulnerabilidade (CVSS scores)
-- [x] Fix implementado (com código)
-- [x] Re-teste (evidence of fix working)
+###  (Security Report)
+- [x] ([SECURITY_REPORT.md](SECURITY_REPORT.md))
 
-### ✅ Evidências Práticas (Practical Evidence)
+
+###  Evidências Práticas (Practical Evidence)
 - [x] Request/response relevantes (curl examples)
 - [x] Screenshots (HTML UI provided)
 - [x] Inputs maliciosos (safe lab examples)
@@ -335,7 +332,7 @@ curl -X POST http://localhost:3001/api/reset-password \
 
 ---
 
-## 🔍 Security Report
+##  Security Report
 
 See [SECURITY_REPORT.md](SECURITY_REPORT.md) for:
 - Detailed vulnerability descriptions
@@ -347,7 +344,7 @@ See [SECURITY_REPORT.md](SECURITY_REPORT.md) for:
 
 ---
 
-## 🧬 API Endpoints
+##  API Endpoints
 
 ### V1 & V2 Endpoints (identical interface, different implementation)
 
@@ -379,7 +376,7 @@ POST /api/reset-password
 
 ---
 
-## 🔐 Key Differences Summary
+##  Key Differences Summary
 
 | Feature | V1 | V2 |
 |---------|----|----|
@@ -396,7 +393,7 @@ POST /api/reset-password
 
 ---
 
-## 🚀 Next Steps (Production Deployment)
+##  Next Steps (Production Deployment)
 
 1. **Use HTTPS** (add to secure flag)
 2. **Multi-Factor Authentication** (TOTP/SMS)
@@ -411,7 +408,7 @@ POST /api/reset-password
 
 ---
 
-## 📚 References
+##  References
 
 - OWASP Top 10: https://owasp.org/www-project-top-ten/
 - Authentication Cheat Sheet: https://cheatsheetseries.owasp.org/cheatsheets/Authentication_Cheat_Sheet.html
@@ -420,7 +417,7 @@ POST /api/reset-password
 
 ---
 
-## ⚠️ Disclaimer
+## Disclaimer
 
 - **V1 is intentionally vulnerable** for educational purposes only
 - **Never use V1 code in production**
@@ -429,20 +426,3 @@ POST /api/reset-password
 
 ---
 
-## 📞 Contact
-
-**Developer:** Alexandru Pătrascu  
-**Email:** To be provided in submission  
-**Course:** Dezvoltarea Aplicațiilor Software Securizate  
-**University:** Universitatea din București  
-
----
-
-## 📝 License
-
-This project is for educational purposes as part of the university course.
-
----
-
-**Last Updated:** April 29, 2026  
-**Status:** ✅ Complete

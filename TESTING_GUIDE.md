@@ -102,7 +102,7 @@ curl -X POST http://localhost:3001/api/reset-password \
     "token": "1",
     "newPassword": "anotherpass123"
   }'
-# Result (V1): 200 OK (token reused!) ❌
+# Result (V1): 200 OK (token reused!) 
 ```
 
 ---
@@ -513,14 +513,12 @@ This will:
 
 | Test | V1 Result | V2 Result |
 |------|-----------|-----------|
-| 3-char password accepted | ❌ YES | ✓ NO |
-| User enumeration possible | ❌ YES | ✓ NO |
-| Rate limiting | ❌ NO | ✓ YES |
-| Reset token predictable | ❌ YES | ✓ NO |
-| Reset token reusable | ❌ YES | ✓ NO |
-| Session HttpOnly | ❌ NO | ✓ YES |
-| Hash is MD5 | ❌ YES | ✓ NO (Bcrypt) |
+| 3-char password accepted |  YES |  NO |
+| User enumeration possible |  YES |  NO |
+| Rate limiting |  NO |  YES |
+| Reset token predictable |  YES |  NO |
+| Reset token reusable |  YES |  NO |
+| Session HttpOnly |  NO |  YES |
+| Hash is MD5 |  YES |  NO (Bcrypt) |
 
 ---
-
-**All tests documented for reproducibility and audit purposes.**

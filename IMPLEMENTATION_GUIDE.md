@@ -4,7 +4,7 @@ This document maps all project requirements to the implementation.
 
 ---
 
-## 📋 Functional Requirements Checklist
+##  Functional Requirements Checklist
 
 ### 3.1 - Înregistrare Utilizator (User Registration)
 
@@ -18,7 +18,7 @@ This document maps all project requirements to the implementation.
 
 **Implementation:**
 
-✅ **V1 (Vulnerable)** - [server-v1.js](server-v1.js#L57-L85)
+ **V1 (Vulnerable)** - [server-v1.js](server-v1.js#L57-L85)
 ```javascript
 app.post('/api/register', (req, res) => {
   const { username, email, password } = req.body;
@@ -45,7 +45,7 @@ app.post('/api/register', (req, res) => {
 });
 ```
 
-✅ **V2 (Secure)** - [server-v2.js](server-v2.js#L200-L235)
+ **V2 (Secure)** - [server-v2.js](server-v2.js#L200-L235)
 ```javascript
 app.post('/api/register', async (req, res) => {
   // Strong validation
@@ -83,7 +83,7 @@ CREATE TABLE users (
 );
 ```
 
-✅ **Frontend:** [public/index-v1.html](public/index-v1.html) - Register tab
+ **Frontend:** [public/index-v1.html](public/index-v1.html) - Register tab
 
 ---
 
@@ -98,7 +98,7 @@ CREATE TABLE users (
 
 **Implementation:**
 
-✅ **V1 (Vulnerable)** - [server-v1.js](server-v1.js#L87-L130)
+ **V1 (Vulnerable)** - [server-v1.js](server-v1.js#L87-L130)
 ```javascript
 app.post('/api/login', (req, res) => {
   const { username, password } = req.body;
@@ -141,7 +141,7 @@ app.post('/api/login', (req, res) => {
 });
 ```
 
-✅ **V2 (Secure)** - [server-v2.js](server-v2.js#L237-L300)
+ **V2 (Secure)** - [server-v2.js](server-v2.js#L237-L300)
 ```javascript
 app.post('/api/login', async (req, res) => {
   const { username, password } = req.body;
@@ -207,7 +207,7 @@ app.post('/api/login', async (req, res) => {
 });
 ```
 
-✅ **Frontend:** [public/index-v1.html](public/index-v1.html) / [public/index-v2.html](public/index-v2.html) - Login tab
+ **Frontend:** [public/index-v1.html](public/index-v1.html) / [public/index-v2.html](public/index-v2.html) - Login tab
 
 ---
 
@@ -220,7 +220,7 @@ app.post('/api/login', async (req, res) => {
 
 **Implementation:**
 
-✅ **V1 & V2** - [server-v1.js](server-v1.js#L133-L145) / [server-v2.js](server-v2.js#L302-L314)
+ **V1 & V2** - [server-v1.js](server-v1.js#L133-L145) / [server-v2.js](server-v2.js#L302-L314)
 ```javascript
 app.post('/api/logout', (req, res) => {
   const sessionId = req.cookies.sessionId;
@@ -238,7 +238,7 @@ app.post('/api/logout', (req, res) => {
 });
 ```
 
-✅ **Session invalidation tested:** After logout, GET /api/user returns 401
+ **Session invalidation tested:** After logout, GET /api/user returns 401
 
 ---
 
@@ -253,7 +253,7 @@ app.post('/api/logout', (req, res) => {
 
 **Implementation:**
 
-✅ **V1 (Vulnerable)** - [server-v1.js](server-v1.js#L162-L192)
+**V1 (Vulnerable)** - [server-v1.js](server-v1.js#L162-L192)
 ```javascript
 app.post('/api/forgot-password', (req, res) => {
   const { email } = req.body;
@@ -263,7 +263,6 @@ app.post('/api/forgot-password', (req, res) => {
       return res.json({ message: 'If email exists, reset link sent' });
     }
 
-    // VULNERABLE: Token is just user ID
     const resetToken = user.id.toString();
 
     db.run(
@@ -301,7 +300,7 @@ app.post('/api/reset-password', (req, res) => {
 });
 ```
 
-✅ **V2 (Secure)** - [server-v2.js](server-v2.js#L340-L397)
+ **V2 (Secure)** - [server-v2.js](server-v2.js#L340-L397)
 ```javascript
 app.post('/api/forgot-password', async (req, res) => {
   const { email } = req.body;
@@ -371,7 +370,7 @@ app.post('/api/reset-password', async (req, res) => {
 });
 ```
 
-✅ **Frontend:** Login tab → Forgot Password
+ **Frontend:** Login tab → Forgot Password
 
 ---
 
@@ -385,7 +384,7 @@ app.post('/api/reset-password', async (req, res) => {
 
 **Implementation:**
 
-✅ **V1 & V2** - [server-v1.js](server-v1.js#L147-L160) / [server-v2.js](server-v2.js#L316-L337)
+ **V1 & V2** - [server-v1.js](server-v1.js#L147-L160) / [server-v2.js](server-v2.js#L316-L337)
 ```javascript
 app.get('/api/user', (req, res) => {
   const sessionId = req.cookies.sessionId;
@@ -417,7 +416,7 @@ app.get('/api/user', (req, res) => {
 });
 ```
 
-✅ **Session stored in SQLite:**
+ **Session stored in SQLite:**
 ```sql
 CREATE TABLE sessions (
   id TEXT PRIMARY KEY,
@@ -430,7 +429,7 @@ CREATE TABLE sessions (
 
 ---
 
-## 🔴 Cerințe de Securitate - Vulnerabilities Mapping
+##  Cerințe de Securitate - Vulnerabilities Mapping
 
 ### 4.1 - Password Policy Slab
 
@@ -454,7 +453,7 @@ function validatePassword(password) {
 }
 ```
 
-✅ **PoC in SECURITY_REPORT.md** - Vulnerability #1
+**PoC in SECURITY_REPORT.md** - Vulnerability #1
 
 ---
 
@@ -479,7 +478,7 @@ async function hashPassword(password) {
 // One-way function, rainbow table resistant
 ```
 
-✅ **PoC in SECURITY_REPORT.md** - Vulnerability #2
+ **PoC in SECURITY_REPORT.md** - Vulnerability #2
 
 ---
 
@@ -514,7 +513,7 @@ if (newFailedAttempts >= MAX_ATTEMPTS) {
 }
 ```
 
-✅ **PoC in SECURITY_REPORT.md** - Vulnerability #3
+ **PoC in SECURITY_REPORT.md** - Vulnerability #3
 
 ---
 
@@ -539,7 +538,7 @@ const responseDelay = Math.random() * 100 + 100;
 await new Promise(r => setTimeout(r, responseDelay));
 ```
 
-✅ **PoC in SECURITY_REPORT.md** - Vulnerability #4
+ **PoC in SECURITY_REPORT.md** - Vulnerability #4
 
 ---
 
@@ -548,10 +547,10 @@ await new Promise(r => setTimeout(r, responseDelay));
 **V1 Vulnerability:**
 ```javascript
 res.cookie('sessionId', sessionId, {
-  httpOnly: false,    // ❌ Can be stolen via XSS
-  secure: false,      // ❌ Sent over HTTP
-  sameSite: 'Lax',    // ❌ CSRF possible
-  maxAge: 30 * 24 * 60 * 60 * 1000  // ❌ Too long (30 days)
+  httpOnly: false,    //  Can be stolen via XSS
+  secure: false,      //  Sent over HTTP
+  sameSite: 'Lax',    //  CSRF possible
+  maxAge: 30 * 24 * 60 * 60 * 1000  //  Too long (30 days)
 });
 ```
 
@@ -569,7 +568,7 @@ res.cookie('sessionId', sessionId, {
 db.get('SELECT * FROM sessions WHERE id = ? AND expires_at > datetime("now")', ...)
 ```
 
-✅ **PoC in SECURITY_REPORT.md** - Vulnerability #5
+**PoC in SECURITY_REPORT.md** - Vulnerability #5
 
 ---
 
@@ -602,13 +601,13 @@ db.get('SELECT * FROM password_resets WHERE token = ? AND expires_at > datetime(
 db.run('UPDATE password_resets SET used = 1 WHERE id = ?', ...)
 ```
 
-✅ **PoC in SECURITY_REPORT.md** - Vulnerability #6
+ **PoC in SECURITY_REPORT.md** - Vulnerability #6
 
 ---
 
-## 📄 Cerințe de Livrare
+##  Cerințe de Livrare
 
-### ✅ 1. Cod Sursă
+###  1. Cod Sursă
 
 **Delivered:**
 - [server-v1.js](server-v1.js) - V1 Vulnerable (550 lines)
@@ -623,7 +622,7 @@ db.run('UPDATE password_resets SET used = 1 WHERE id = ?', ...)
 
 ---
 
-### ✅ 2. Raport de Securitate (Mini Pentest)
+###  2. Raport de Securitate (Mini Pentest)
 
 **Delivered:** [SECURITY_REPORT.md](SECURITY_REPORT.md) - 600+ lines
 
@@ -637,7 +636,7 @@ Contains for each of 6 vulnerabilities:
 
 ---
 
-### ✅ 3. Dovezi Practice
+###  3. Dovezi Practice
 
 **Delivered:**
 - [TESTING_GUIDE.md](TESTING_GUIDE.md) - Curl examples for all vulnerabilities
@@ -648,7 +647,7 @@ Contains for each of 6 vulnerabilities:
 
 ---
 
-## 🚀 How to Verify
+##  How to Verify
 
 ### Run V1:
 ```bash
@@ -681,21 +680,21 @@ sqlite3 authx_v2.db "SELECT username, password FROM users;"
 
 ---
 
-## ✅ Todos Completed
+##  Todos Completed
 
-- ✅ All 5 functional requirements implemented
-- ✅ All 6 security vulnerabilities intentionally added to v1
-- ✅ All 6 vulnerabilities fixed in v2
-- ✅ Security report with detailed PoCs
-- ✅ Testing guide with curl examples
-- ✅ Automated testing script
-- ✅ Frontend for both versions
-- ✅ SQLite database
-- ✅ Clear project structure
-- ✅ README with instructions
+-  All 5 functional requirements implemented
+-  All 6 security vulnerabilities intentionally added to v1
+-  All 6 vulnerabilities fixed in v2
+-  Security report with detailed PoCs
+-  Testing guide with curl examples
+-  Automated testing script
+-  Frontend for both versions
+-  SQLite database
+-  Clear project structure
+-  README with instructions
 
 ---
 
-**Implementation Status:** ✅ COMPLETE
+**Implementation Status:**  COMPLETE
 
 All requirements from PDF have been fulfilled with code evidence and practical testing.

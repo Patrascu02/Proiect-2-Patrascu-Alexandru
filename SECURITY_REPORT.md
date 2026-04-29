@@ -854,20 +854,7 @@ Token 3: 2d8f5a9c1e7b3f4a6c9d2e5f8a1b4c7f...
 # No pattern - completely random
 ```
 
----
-
-## Testing Summary Table
-
-| Vulnerability | v1 Status | v2 Status | PoC Result |
-|---|---|---|---|
-| Weak Password Policy | ❌ VULNERABLE | ✅ FIXED | Bypass failed in v2 |
-| Insecure Password Storage | ❌ VULNERABLE | ✅ FIXED | Hash uncrackable in v2 |
-| No Rate Limiting | ❌ VULNERABLE | ✅ FIXED | Blocked after 5 attempts |
-| User Enumeration | ❌ VULNERABLE | ✅ FIXED | Generic messages in v2 |
-| Insecure Sessions | ❌ VULNERABLE | ✅ FIXED | HttpOnly & Secure flags |
-| Insecure Password Reset | ❌ VULNERABLE | ✅ FIXED | One-time tokens + expiration |
-
----
+-
 
 ## Security Recommendations (Beyond Scope)
 
@@ -947,7 +934,3 @@ npm start:v2
 - Request reset, try token multiple times (v2: only once)
 
 ---
-
-**Report Prepared By:** Alexandru Pătrascu  
-**Date:** April 29, 2026  
-**Status:** ✅ Complete - All vulnerabilities fixed and validated

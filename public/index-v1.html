@@ -222,8 +222,8 @@
 <body>
     <div class="container">
         <div class="header">
-            <h1>🔓 AuthX - Break the Login</h1>
-            <p>⚠️ Version 1.0 - VULNERABLE (Intentional)</p>
+            <h1> AuthX - Break the Login</h1>
+            <p> Version 1.0 - VULNERABLE (Intentional)</p>
         </div>
 
         <div class="tabs">
@@ -248,23 +248,22 @@
             </form>
 
             <div class="vulnerability-warning">
-                <strong>🔴 V1 Vulnerabilities:</strong><br>
-                • No rate limiting - Try unlimited login attempts<br>
-                • Different error messages (User not found vs Wrong password)<br>
-                • MD5 password hashing<br>
-                • Sessions last 30 days<br>
-                • Weak password policy (min 3 chars)
+                <strong> V1 Vulnerabilities:</strong><br>
+                 No rate limiting - Try unlimited login attempts<br>
+                 Different error messages (User not found vs Wrong password)<br>
+                 MD5 password hashing<br>
+                 Sessions last 30 days<br>
+                 Weak password policy (min 3 chars)
             </div>
 
             <div class="helper-section">
-                <h3>🧪 Test Accounts (for demo):</h3>
+                <h3> Test Accounts (for demo):</h3>
                 <button type="button" onclick="testLogin('admin', 'test')">Test: admin / test</button>
                 <button type="button" onclick="testLogin('user123', 'pass')">Test: user123 / pass</button>
                 <p style="font-size: 11px; margin-top: 10px; color: #666;">Create these with the Register tab first</p>
             </div>
         </div>
 
-        <!-- REGISTER TAB -->
         <div id="register" class="tab-content">
             <form onsubmit="register(event)">
                 <div class="form-group">
@@ -285,15 +284,14 @@
             </form>
 
             <div class="vulnerability-warning">
-                <strong>🔴 V1 Vulnerabilities:</strong><br>
-                • Passwords only need 3+ characters<br>
-                • No complexity requirements<br>
-                • MD5 hashing (deprecated, easily crackable)<br>
-                • Enum error if user exists
+                <strong> V1 Vulnerabilities:</strong><br>
+                 Passwords only need 3+ characters<br>
+                 No complexity requirements<br>
+                 MD5 hashing (deprecated, easily crackable)<br>
+                 Enum error if user exists
             </div>
         </div>
 
-        <!-- FORGOT PASSWORD TAB -->
         <div id="forgot" class="tab-content">
             <form onsubmit="forgotPassword(event)">
                 <div class="form-group">
@@ -305,11 +303,11 @@
             </form>
 
             <div class="vulnerability-warning">
-                <strong>🔴 V1 Vulnerabilities:</strong><br>
-                • Reset token is just the user ID<br>
-                • Token can be reused infinitely<br>
-                • Token never expires<br>
-                • Token is predictable
+                <strong> V1 Vulnerabilities:</strong><br>
+                 Reset token is just the user ID<br>
+                 Token can be reused infinitely<br>
+                 Token never expires<br>
+                 Token is predictable
             </div>
 
             <div id="reset_form_container" style="display: none; margin-top: 20px; padding-top: 20px; border-top: 1px solid #eee;">
@@ -330,7 +328,7 @@
             </div>
         </div>
 
-        <!-- DASHBOARD (appears after login) -->
+        
         <div id="dashboard" class="dashboard">
             <h2>Welcome!</h2>
             <div id="user_info" class="user-info"></div>
@@ -406,14 +404,14 @@
                         <p><strong>Email:</strong> ${data.user.email}</p>
                         <p><strong>Session ID:</strong> <code style="font-size: 11px; word-break: break-all;">${data.sessionId}</code></p>
                         <p style="margin-top: 10px; font-size: 12px; color: #d32f2f;">
-                            ⚠️ Session ID exposed in response!<br>
+                             Session ID exposed in response!<br>
                             Session lasts 30 days - very long!
                         </p>
                     `;
                 } else {
                     msgEl.className = 'message error';
                     msgEl.textContent = '✗ ' + (data.error || 'Login failed');
-                    // Different messages allow user enumeration!
+                    
                 }
             } catch (err) {
                 showMessage('login_message', 'error', 'Connection error: ' + err.message);

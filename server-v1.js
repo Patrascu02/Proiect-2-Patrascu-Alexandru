@@ -1,7 +1,6 @@
 /**
  * PROIECT 2: BREAK THE LOGIN - VERSIUNEA VULNERABILĂ (V1)
- * 
- * VULNERABILITĂȚI INTENȚIONATE:
+ * * VULNERABILITĂȚI INTENȚIONATE:
  * 1. Weak password policy - Parole foarte scurte acceptate
  * 2. Insecure password storage - MD5 hash slab
  * 3. No rate limiting - Brute force nelimitat
@@ -14,27 +13,24 @@ const express = require('express');
 const sqlite3 = require('sqlite3').verbose();
 const bodyParser = require('body-parser');
 const crypto = require('crypto');
-const jwt = require('jsonwebtoken');
 const path = require('path');
 const fs = require('fs');
+const cookieParser = require('cookie-parser'); 
 
 const app = express();
 const PORT = 3001;
 
-// Configurare
 app.use(bodyParser.json());
 app.use(bodyParser.urlencoded({ extended: true }));
+app.use(cookieParser());
 app.use(express.static('public'));
 
-// Bază de date SQLite
 const db = new sqlite3.Database('./authx_v1.db', (err) => {
   if (err) console.error('Database error:', err);
   console.log('Connected to SQLite database (V1 - Vulnerable)');
 });
 
-// Inițializare tabele
 db.serialize(() => {
-  // Tabelul utilizatorilor
   db.run(`CREATE TABLE IF NOT EXISTS users (
     id INTEGER PRIMARY KEY AUTOINCREMENT,
     username TEXT UNIQUE NOT NULL,
@@ -44,7 +40,29 @@ db.serialize(() => {
     created_at DATETIME DEFAULT CURRENT_TIMESTAMP
   )`);
 
-  // Tabelul sesiunilor (cu vulnerabilități)
+  db.run(`CREATE TABLE IF NOT EXISTS tickets (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    title TEXT NOT NULL,
+    description TEXT,
+    severity TEXT,
+    status TEXT DEFAULT 'OPEN',
+    owner_id INTEGER NOT NULL,
+    created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+    updated_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+    FOREIGN KEY(owner_id) REFERENCES users(id)
+  )`);
+
+  db.run(`CREATE TABLE IF NOT EXISTS audit_logs (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    user_id INTEGER,
+    action TEXT NOT NULL,
+    resource TEXT,
+    resource_id TEXT,
+    timestamp DATETIME DEFAULT CURRENT_TIMESTAMP,
+    ip_address TEXT,
+    FOREIGN KEY(user_id) REFERENCES users(id)
+  )`);
+
   db.run(`CREATE TABLE IF NOT EXISTS sessions (
     id TEXT PRIMARY KEY,
     user_id INTEGER NOT NULL,
@@ -53,7 +71,6 @@ db.serialize(() => {
     FOREIGN KEY(user_id) REFERENCES users(id)
   )`);
 
-  // Tabelul reset token-uri (vulnerabil)
   db.run(`CREATE TABLE IF NOT EXISTS password_resets (
     id INTEGER PRIMARY KEY AUTOINCREMENT,
     user_id INTEGER NOT NULL,
@@ -61,99 +78,82 @@ db.serialize(() => {
     created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
     FOREIGN KEY(user_id) REFERENCES users(id)
   )`);
-
-  // Tabelul login attempts (pentru analiză)
-  db.run(`CREATE TABLE IF NOT EXISTS login_attempts (
-    id INTEGER PRIMARY KEY AUTOINCREMENT,
-    username TEXT NOT NULL,
-    success INTEGER,
-    timestamp DATETIME DEFAULT CURRENT_TIMESTAMP,
-    ip_address TEXT
-  )`);
 });
 
-// ============ VULNERABILITATE #1 & #2: WEAK PASSWORD POLICY + INSECURE STORAGE ============
-// MD5 hash (slab și deprecat!)
+
 function hashPasswordMD5(password) {
   return crypto.createHash('md5').update(password).digest('hex');
 }
 
-// REGISTER - cu vulnerabilități
 app.post('/api/register', (req, res) => {
   const { username, email, password } = req.body;
 
-  // VULNERABILITATE #1: Fără validare de lungime minimă sau complexitate
   if (!username || !email || !password) {
     return res.status(400).json({ error: 'All fields required' });
   }
 
-  // Se acceptă parole scurte și triviale!
   if (password.length < 3) {
     return res.status(400).json({ error: 'Password too short' });
   }
 
-  // VULNERABILITATE #2: Parola stocată cu MD5 (hash slab!)
   const passwordHash = hashPasswordMD5(password);
 
   db.run(
     'INSERT INTO users (username, email, password, role) VALUES (?, ?, ?, ?)',
     [username, email, passwordHash, 'USER'],
-    (err) => {
+    function(err) {
       if (err) {
-        // VULNERABILITATE #4: Mesaje diferite pentru utilizator existent
         if (err.message.includes('UNIQUE')) {
           return res.status(400).json({ error: 'User already exists' });
         }
         return res.status(500).json({ error: 'Registration error' });
       }
+      
+      db.run('INSERT INTO audit_logs (user_id, action, resource, ip_address) VALUES (?, ?, ?, ?)',
+        [this.lastID, 'REGISTER', 'auth', req.ip]);
+
       res.json({ message: 'User registered successfully' });
     }
   );
 });
 
-// LOGIN - cu vulnerabilități
 app.post('/api/login', (req, res) => {
   const { username, password } = req.body;
-
-  // Log attempt (pentru audit - neprotejat)
-  db.run('INSERT INTO login_attempts (username, success) VALUES (?, ?)',
-    [username, 0]);
+  const clientIP = req.ip;
 
   if (!username || !password) {
     return res.status(400).json({ error: 'Username and password required' });
   }
 
-  // VULNERABILITATE #3: Fără rate limiting - se pot încerca parole nelimitat
   db.get('SELECT * FROM users WHERE username = ?', [username], (err, user) => {
     if (err) return res.status(500).json({ error: 'Server error' });
 
-    // VULNERABILITATE #4: Răspunsuri diferite - enumerare de utilizatori
     if (!user) {
-      return res.status(401).json({ error: 'User not found' }); // Mesaj diferit!
+      db.run('INSERT INTO audit_logs (action, resource, ip_address) VALUES (?, ?, ?)',
+        ['LOGIN_FAILED', 'auth', clientIP]);
+      return res.status(401).json({ error: 'User not found' }); 
     }
 
     const passwordHash = hashPasswordMD5(password);
     if (user.password !== passwordHash) {
-      return res.status(401).json({ error: 'Invalid password' }); // Alt mesaj!
+      db.run('INSERT INTO audit_logs (user_id, action, resource, ip_address) VALUES (?, ?, ?, ?)',
+        [user.id, 'LOGIN_FAILED', 'auth', clientIP]);
+      return res.status(401).json({ error: 'Invalid password' }); 
     }
 
-    // Login reușit
-    db.run('UPDATE login_attempts SET success = 1 WHERE username = ? ORDER BY timestamp DESC LIMIT 1',
-      [username]);
+    db.run('INSERT INTO audit_logs (user_id, action, resource, ip_address) VALUES (?, ?, ?, ?)',
+      [user.id, 'LOGIN_SUCCESS', 'auth', clientIP]);
 
-    // VULNERABILITATE #5: Session/Token cu probleme
-    // Sesiunea se creează fără setări de securitate
     const sessionId = crypto.randomBytes(16).toString('hex');
     
     db.run(
       'INSERT INTO sessions (id, user_id) VALUES (?, ?)',
       [sessionId, user.id],
       () => {
-        // Cookie fără HttpOnly, Secure, SameSite și expirare prea lungă (30 zile)
         res.cookie('sessionId', sessionId, {
-          httpOnly: false,  // VULNERABILITATE - Accesibil din JavaScript (XSS)
-          secure: false,    // VULNERABILITATE - Se trimite și pe HTTP
-          sameSite: 'Lax',  // VULNERABILITATE - Expus la CSRF
+          httpOnly: false,  
+          secure: false,    
+          sameSite: 'Lax', 
           maxAge: 30 * 24 * 60 * 60 * 1000 // 30 zile - prea mult!
         });
 
@@ -167,21 +167,27 @@ app.post('/api/login', (req, res) => {
   });
 });
 
-// LOGOUT
 app.post('/api/logout', (req, res) => {
-  const { sessionId } = req.body;
+  const sessionId = req.body.sessionId || req.cookies.sessionId;
 
   if (!sessionId) {
     return res.status(400).json({ error: 'Session ID required' });
   }
 
-  db.run('DELETE FROM sessions WHERE id = ?', [sessionId], () => {
-    res.clearCookie('sessionId');
-    res.json({ message: 'Logged out successfully' });
+  
+  db.get('SELECT user_id FROM sessions WHERE id = ?', [sessionId], (err, session) => {
+    if (session) {
+      db.run('INSERT INTO audit_logs (user_id, action, resource, ip_address) VALUES (?, ?, ?, ?)',
+        [session.user_id, 'LOGOUT', 'auth', req.ip]);
+    }
+    
+    db.run('DELETE FROM sessions WHERE id = ?', [sessionId], () => {
+      res.clearCookie('sessionId', { path: '/' });
+      res.json({ message: 'Logged out successfully' });
+    });
   });
 });
 
-// GET USER (verifică sesiune)
 app.get('/api/user', (req, res) => {
   const sessionId = req.cookies.sessionId || req.query.sessionId;
 
@@ -204,7 +210,6 @@ app.get('/api/user', (req, res) => {
   });
 });
 
-// ============ VULNERABILITATE #6: INSECURE PASSWORD RESET ============
 app.post('/api/forgot-password', (req, res) => {
   const { email } = req.body;
 
@@ -214,20 +219,20 @@ app.post('/api/forgot-password', (req, res) => {
 
   db.get('SELECT * FROM users WHERE email = ?', [email], (err, user) => {
     if (err || !user) {
-      // Mesaj generic pentru a nu arăta dacă email-ul există
       return res.json({ message: 'If email exists, reset link sent' });
     }
 
-    // VULNERABILITATE #6: Token predictibil (doar ID-ul utilizatorului!)
-    const resetToken = user.id.toString(); // EXTREM DE SLAB!
+    const resetToken = user.id.toString(); 
 
     db.run(
       'INSERT INTO password_resets (user_id, token) VALUES (?, ?)',
       [user.id, resetToken],
       () => {
+        db.run('INSERT INTO audit_logs (user_id, action, resource, ip_address) VALUES (?, ?, ?, ?)',
+          [user.id, 'PASSWORD_RESET_REQUEST', 'auth', req.ip]);
+
         res.json({ 
           message: 'Password reset link sent',
-          // EXPUS! Nu ar trebui să fie în răspuns în producție
           resetLink: `http://localhost:3001/reset-password?token=${resetToken}`
         });
       }
@@ -235,7 +240,6 @@ app.post('/api/forgot-password', (req, res) => {
   });
 });
 
-// RESET PASSWORD
 app.post('/api/reset-password', (req, res) => {
   const { token, newPassword } = req.body;
 
@@ -243,32 +247,31 @@ app.post('/api/reset-password', (req, res) => {
     return res.status(400).json({ error: 'Token and password required' });
   }
 
-  // VULNERABILITATE #6: Token nu are expirare și poate fi reutilizat
   db.get('SELECT * FROM password_resets WHERE token = ?', [token], (err, reset) => {
     if (err || !reset) {
       return res.status(400).json({ error: 'Invalid reset token' });
     }
 
-    // Parola nu este validată!
     const passwordHash = hashPasswordMD5(newPassword);
 
     db.run(
       'UPDATE users SET password = ? WHERE id = ?',
       [passwordHash, reset.user_id],
       () => {
-        // Token-ul NU este șters după utilizare - poate fi reutilizat!
+        db.run('INSERT INTO audit_logs (user_id, action, resource, ip_address) VALUES (?, ?, ?, ?)',
+          [reset.user_id, 'PASSWORD_RESET_SUCCESS', 'auth', req.ip]);
+
         res.json({ message: 'Password reset successfully' });
       }
     );
   });
 });
 
-// Page - index
 app.get('/', (req, res) => {
   res.sendFile(path.join(__dirname, 'public', 'index-v1.html'));
 });
 
 app.listen(PORT, () => {
-  console.log(`🔓 AuthX V1 (VULNERABLE) running on http://localhost:${PORT}`);
-  console.log('⚠️  WARNING: This version has intentional security vulnerabilities!');
+  console.log(` AuthX V1 (VULNERABLE) running on http://localhost:${PORT}`);
+  console.log('  WARNING: This version has intentional security vulnerabilities!');
 });

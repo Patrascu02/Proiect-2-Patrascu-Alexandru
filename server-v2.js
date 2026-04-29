@@ -1,7 +1,6 @@
 /**
  * PROIECT 2: BREAK THE LOGIN - VERSIUNEA FIXATĂ (V2)
- * 
- * FIXES IMPLEMENTATE:
+ * * FIXES IMPLEMENTATE:
  * 1. Strong password policy - Lungime minimă 12, complexitate, mesaj generic
  * 2. Secure password storage - bcrypt cu salt
  * 3. Rate limiting - Rate limiting pe login, blocare temporară
@@ -18,27 +17,22 @@ const path = require('path');
 const fs = require('fs');
 const cookieParser = require('cookie-parser');
 
-// Simple bcrypt-like hashing (în producție use real bcrypt)
 const bcrypt = require('bcryptjs');
 
 const app = express();
 const PORT = 3002;
 
-// Configurare
 app.use(bodyParser.json());
 app.use(bodyParser.urlencoded({ extended: true }));
 app.use(cookieParser());
 app.use(express.static('public'));
 
-// Bază de date SQLite
 const db = new sqlite3.Database('./authx_v2.db', (err) => {
   if (err) console.error('Database error:', err);
   console.log('Connected to SQLite database (V2 - Secure)');
 });
 
-// Inițializare tabele
 db.serialize(() => {
-  // Tabelul utilizatorilor
   db.run(`CREATE TABLE IF NOT EXISTS users (
     id INTEGER PRIMARY KEY AUTOINCREMENT,
     username TEXT UNIQUE NOT NULL,
@@ -50,7 +44,29 @@ db.serialize(() => {
     created_at DATETIME DEFAULT CURRENT_TIMESTAMP
   )`);
 
-  // Tabelul sesiunilor (securizate)
+  db.run(`CREATE TABLE IF NOT EXISTS tickets (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    title TEXT NOT NULL,
+    description TEXT,
+    severity TEXT,
+    status TEXT DEFAULT 'OPEN',
+    owner_id INTEGER NOT NULL,
+    created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+    updated_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+    FOREIGN KEY(owner_id) REFERENCES users(id)
+  )`);
+
+  db.run(`CREATE TABLE IF NOT EXISTS audit_logs (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    user_id INTEGER,
+    action TEXT NOT NULL,
+    resource TEXT,
+    resource_id TEXT,
+    timestamp DATETIME DEFAULT CURRENT_TIMESTAMP,
+    ip_address TEXT,
+    FOREIGN KEY(user_id) REFERENCES users(id)
+  )`);
+
   db.run(`CREATE TABLE IF NOT EXISTS sessions (
     id TEXT PRIMARY KEY,
     user_id INTEGER NOT NULL,
@@ -59,7 +75,6 @@ db.serialize(() => {
     FOREIGN KEY(user_id) REFERENCES users(id)
   )`);
 
-  // Tabelul reset token-uri (securizate)
   db.run(`CREATE TABLE IF NOT EXISTS password_resets (
     id INTEGER PRIMARY KEY AUTOINCREMENT,
     user_id INTEGER NOT NULL,
@@ -69,20 +84,9 @@ db.serialize(() => {
     created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
     FOREIGN KEY(user_id) REFERENCES users(id)
   )`);
-
-  // Tabelul login attempts (monitorizare)
-  db.run(`CREATE TABLE IF NOT EXISTS login_attempts (
-    id INTEGER PRIMARY KEY AUTOINCREMENT,
-    username TEXT NOT NULL,
-    success INTEGER,
-    timestamp DATETIME DEFAULT CURRENT_TIMESTAMP,
-    ip_address TEXT
-  )`);
 });
 
-// ============ SECURITY HELPERS ============
 
-// FIX #1: Validare parolă puternică
 function validatePassword(password) {
   const errors = [];
   
@@ -105,7 +109,6 @@ function validatePassword(password) {
   return errors.length === 0 ? { valid: true } : { valid: false, errors };
 }
 
-// FIX #2: Hash sigur cu bcrypt
 async function hashPassword(password) {
   const salt = await bcrypt.genSalt(10);
   return await bcrypt.hash(password, salt);
@@ -115,9 +118,8 @@ async function verifyPassword(password, hash) {
   return await bcrypt.compare(password, hash);
 }
 
-// FIX #3: Rate limiting în memorie (în producție: Redis)
 const loginAttempts = new Map();
-const RATE_LIMIT_WINDOW = 15 * 60 * 1000; // 15 minute
+const RATE_LIMIT_WINDOW = 15 * 60 * 1000; 
 const MAX_ATTEMPTS = 5;
 
 function checkRateLimit(username) {
@@ -145,33 +147,32 @@ function recordLoginAttempt(username) {
   loginAttempts.set(key, attempts);
 }
 
-// ============ REGISTER ============
 app.post('/api/register', async (req, res) => {
   const { username, email, password } = req.body;
 
-  // Validare input
   if (!username || !email || !password) {
     return res.status(400).json({ error: 'All fields required' });
   }
 
-  // FIX #1: Validare parolă puternică
   const passwordValidation = validatePassword(password);
   if (!passwordValidation.valid) {
     return res.status(400).json({ error: 'Invalid password', details: passwordValidation.errors });
   }
 
   try {
-    // FIX #2: Hash sigur
     const passwordHash = await hashPassword(password);
 
     db.run(
       'INSERT INTO users (username, email, password, role) VALUES (?, ?, ?, ?)',
       [username, email, passwordHash, 'USER'],
-      (err) => {
+      function(err) {
         if (err) {
-          // FIX #4: Mesaj generic (nu arată dacă userul există)
           return res.status(400).json({ error: 'Registration failed. Invalid credentials' });
         }
+        
+        db.run('INSERT INTO audit_logs (user_id, action, resource, ip_address) VALUES (?, ?, ?, ?)',
+          [this.lastID, 'REGISTER', 'auth', req.ip]);
+
         res.json({ message: 'User registered successfully' });
       }
     );
@@ -180,17 +181,14 @@ app.post('/api/register', async (req, res) => {
   }
 });
 
-// ============ LOGIN ============
 app.post('/api/login', async (req, res) => {
   const { username, password } = req.body;
   const clientIP = req.ip;
 
-  // Validare input
   if (!username || !password) {
     return res.status(400).json({ error: 'Invalid credentials' });
   }
 
-  // FIX #3: Rate limiting
   const rateLimit = checkRateLimit(username);
   if (!rateLimit.allowed) {
     return res.status(429).json({ 
@@ -200,71 +198,62 @@ app.post('/api/login', async (req, res) => {
   }
 
   try {
-    // Uniform response time (simplificat) - FIX #4
-    const startTime = Date.now();
-    const responseDelay = Math.random() * 100 + 100; // 100-200ms
+    const responseDelay = Math.random() * 100 + 100;
 
     db.get('SELECT * FROM users WHERE username = ?', [username], async (err, user) => {
       recordLoginAttempt(username);
 
-      // FIX #4: Mesaj generic - NU se spune dacă userul există sau parolă greșită
       if (err || !user) {
         await new Promise(r => setTimeout(r, responseDelay));
-        db.run('INSERT INTO login_attempts (username, success, ip_address) VALUES (?, ?, ?)',
-          [username, 0, clientIP]);
+        db.run('INSERT INTO audit_logs (action, resource, ip_address) VALUES (?, ?, ?)',
+          ['LOGIN_FAILED', 'auth', clientIP]);
         return res.status(401).json({ error: 'Invalid credentials' });
       }
 
-      // FIX #3: Verificare dacă cont este blocat
       if (user.locked_until && new Date(user.locked_until) > new Date()) {
         await new Promise(r => setTimeout(r, responseDelay));
         return res.status(429).json({ error: 'Account temporarily locked' });
       }
 
-      // FIX #2: Verificare parolă cu hash sigur
       const passwordMatch = await verifyPassword(password, user.password);
       
       if (!passwordMatch) {
-        // FIX #3: Incrementare tentative eșuate
         const newFailedAttempts = user.failed_attempts + 1;
         let lockedUntil = null;
 
         if (newFailedAttempts >= MAX_ATTEMPTS) {
-          lockedUntil = new Date(Date.now() + 15 * 60 * 1000).toISOString(); // Lock 15 minute
+          lockedUntil = new Date(Date.now() + 15 * 60 * 1000).toISOString();
         }
 
         db.run('UPDATE users SET failed_attempts = ?, locked_until = ? WHERE id = ?',
           [newFailedAttempts, lockedUntil, user.id]);
 
         await new Promise(r => setTimeout(r, responseDelay));
-        db.run('INSERT INTO login_attempts (username, success, ip_address) VALUES (?, ?, ?)',
-          [username, 0, clientIP]);
+        db.run('INSERT INTO audit_logs (user_id, action, resource, ip_address) VALUES (?, ?, ?, ?)',
+          [user.id, 'LOGIN_FAILED', 'auth', clientIP]);
 
         return res.status(401).json({ error: 'Invalid credentials' });
       }
 
-      // Login reușit - reset tentative
       db.run('UPDATE users SET failed_attempts = 0, locked_until = NULL WHERE id = ?', [user.id]);
 
-      // FIX #5: Session sigur cu expirare scurtă
       const sessionId = crypto.randomBytes(32).toString('hex');
-      const expiresAt = new Date(Date.now() + 60 * 60 * 1000).toISOString(); // 1 oră
+      const expiresAt = new Date(Date.now() + 60 * 60 * 1000).toISOString();
 
       db.run(
         'INSERT INTO sessions (id, user_id, expires_at) VALUES (?, ?, ?)',
         [sessionId, user.id, expiresAt],
         () => {
-          // FIX #5: Cookie cu setări de securitate
           res.cookie('sessionId', sessionId, {
-            httpOnly: true,   // Nu se poate accesa din JavaScript (protecție XSS)
-            secure: true,     // Se trimite doar pe HTTPS
-            sameSite: 'Strict', // Protecție CSRF
-            maxAge: 60 * 60 * 1000, // 1 oră
+            httpOnly: true,
+            secure: true,
+            sameSite: 'Strict',
+            maxAge: 60 * 60 * 1000,
             path: '/'
           });
 
-          db.run('INSERT INTO login_attempts (username, success, ip_address) VALUES (?, ?, ?)',
-            [username, 1, clientIP]);
+          db.run('INSERT INTO audit_logs (user_id, action, resource, ip_address) VALUES (?, ?, ?, ?)',
+            [user.id, 'LOGIN_SUCCESS', 'auth', clientIP]);
 
           res.json({ 
             message: 'Login successful',
@@ -278,7 +267,6 @@ app.post('/api/login', async (req, res) => {
   }
 });
 
-// ============ LOGOUT ============
 app.post('/api/logout', (req, res) => {
   const sessionId = req.cookies.sessionId;
 
@@ -286,13 +274,19 @@ app.post('/api/logout', (req, res) => {
     return res.status(400).json({ error: 'No session' });
   }
 
-  db.run('DELETE FROM sessions WHERE id = ?', [sessionId], () => {
-    res.clearCookie('sessionId', { path: '/' });
-    res.json({ message: 'Logged out successfully' });
+  db.get('SELECT user_id FROM sessions WHERE id = ?', [sessionId], (err, session) => {
+    if (session) {
+      db.run('INSERT INTO audit_logs (user_id, action, resource, ip_address) VALUES (?, ?, ?, ?)',
+        [session.user_id, 'LOGOUT', 'auth', req.ip]);
+    }
+
+    db.run('DELETE FROM sessions WHERE id = ?', [sessionId], () => {
+      res.clearCookie('sessionId', { path: '/' });
+      res.json({ message: 'Logged out successfully' });
+    });
   });
 });
 
-// ============ GET USER (verifică sesiune) ============
 app.get('/api/user', (req, res) => {
   const sessionId = req.cookies.sessionId;
 
@@ -300,7 +294,6 @@ app.get('/api/user', (req, res) => {
     return res.status(401).json({ error: 'No session' });
   }
 
-  // FIX #5: Verificare expirare sesiune
   db.get('SELECT * FROM sessions WHERE id = ? AND expires_at > datetime("now")', [sessionId], (err, session) => {
     if (err || !session) {
       res.clearCookie('sessionId', { path: '/' });
@@ -317,7 +310,6 @@ app.get('/api/user', (req, res) => {
   });
 });
 
-// ============ PASSWORD RESET ============
 app.post('/api/forgot-password', async (req, res) => {
   const { email } = req.body;
 
@@ -325,25 +317,23 @@ app.post('/api/forgot-password', async (req, res) => {
     return res.status(400).json({ error: 'Email required' });
   }
 
-  // Generic response (nu arată dacă email există)
   db.get('SELECT * FROM users WHERE email = ?', [email], (err, user) => {
-    // FIX #4: Mesaj generic indiferent de rezultat
     if (err || !user) {
       return res.json({ message: 'If email exists, a reset link will be sent' });
     }
 
-    // FIX #6: Token random și secure
     const resetToken = crypto.randomBytes(32).toString('hex');
-    const expiresAt = new Date(Date.now() + 15 * 60 * 1000).toISOString(); // 15 minute
+    const expiresAt = new Date(Date.now() + 15 * 60 * 1000).toISOString();
 
     db.run(
       'INSERT INTO password_resets (user_id, token, expires_at) VALUES (?, ?, ?)',
       [user.id, resetToken, expiresAt],
       () => {
-        // În producție, s-ar trimite prin email
+        db.run('INSERT INTO audit_logs (user_id, action, resource, ip_address) VALUES (?, ?, ?, ?)',
+          [user.id, 'PASSWORD_RESET_REQUEST', 'auth', req.ip]);
+
         res.json({ 
           message: 'If email exists, a reset link will be sent',
-          // În test - se dă direct (nu în producție!)
           resetLink: `http://localhost:3002/reset-password?token=${resetToken}`
         });
       }
@@ -351,7 +341,6 @@ app.post('/api/forgot-password', async (req, res) => {
   });
 });
 
-// RESET PASSWORD
 app.post('/api/reset-password', async (req, res) => {
   const { token, newPassword } = req.body;
 
@@ -360,7 +349,6 @@ app.post('/api/reset-password', async (req, res) => {
   }
 
   try {
-    // FIX #6: Token trebuie valid, neexprirat și neutilizat
     db.get(
       'SELECT * FROM password_resets WHERE token = ? AND expires_at > datetime("now") AND used = 0',
       [token],
@@ -369,7 +357,6 @@ app.post('/api/reset-password', async (req, res) => {
           return res.status(400).json({ error: 'Invalid credentials' });
         }
 
-        // Validare parolă nouă
         const passwordValidation = validatePassword(newPassword);
         if (!passwordValidation.valid) {
           return res.status(400).json({ 
@@ -385,8 +372,10 @@ app.post('/api/reset-password', async (req, res) => {
             'UPDATE users SET password = ?, failed_attempts = 0, locked_until = NULL WHERE id = ?',
             [passwordHash, reset.user_id],
             () => {
-              // FIX #6: Marchează token-ul ca utilizat (nu poate fi reutilizat)
               db.run('UPDATE password_resets SET used = 1 WHERE id = ?', [reset.id], () => {
+                db.run('INSERT INTO audit_logs (user_id, action, resource, ip_address) VALUES (?, ?, ?, ?)',
+                  [reset.user_id, 'PASSWORD_RESET_SUCCESS', 'auth', req.ip]);
+
                 res.json({ message: 'Password reset successfully' });
               });
             }
@@ -401,12 +390,10 @@ app.post('/api/reset-password', async (req, res) => {
   }
 });
 
-// ============ PAGE ============
 app.get('/', (req, res) => {
   res.sendFile(path.join(__dirname, 'public', 'index-v2.html'));
 });
 
-// Verificare instalare bcryptjs
 const checkBcrypt = () => {
   try {
     require('bcryptjs');
@@ -419,11 +406,11 @@ const checkBcrypt = () => {
 
 app.listen(PORT, () => {
   if (!checkBcrypt()) {
-    console.error('❌ Missing dependency: bcryptjs');
+    console.error(' Missing dependency: bcryptjs');
     console.error('Please run: npm install bcryptjs');
     process.exit(1);
   }
   
-  console.log(`🔒 AuthX V2 (SECURE) running on http://localhost:${PORT}`);
-  console.log('✅ All security fixes implemented');
+  console.log(` AuthX V2 (SECURE) running on http://localhost:${PORT}`);
+  console.log(' All security fixes implemented');
 });
