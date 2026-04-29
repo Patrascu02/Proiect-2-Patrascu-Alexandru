@@ -1,0 +1,509 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>AuthX - Break the Login (V1 - VULNERABLE)</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            padding: 20px;
+        }
+
+        .container {
+            background: white;
+            border-radius: 10px;
+            box-shadow: 0 10px 25px rgba(0, 0, 0, 0.2);
+            max-width: 500px;
+            width: 100%;
+            padding: 40px;
+        }
+
+        .header {
+            text-align: center;
+            margin-bottom: 30px;
+        }
+
+        .header h1 {
+            color: #333;
+            margin-bottom: 5px;
+        }
+
+        .header p {
+            color: #d32f2f;
+            font-weight: bold;
+            font-size: 14px;
+        }
+
+        .tabs {
+            display: flex;
+            gap: 10px;
+            margin-bottom: 20px;
+            border-bottom: 2px solid #eee;
+        }
+
+        .tab-btn {
+            padding: 10px 20px;
+            border: none;
+            background: none;
+            cursor: pointer;
+            font-size: 14px;
+            font-weight: 500;
+            color: #666;
+            border-bottom: 3px solid transparent;
+            transition: all 0.3s;
+        }
+
+        .tab-btn.active {
+            color: #667eea;
+            border-bottom-color: #667eea;
+        }
+
+        .tab-content {
+            display: none;
+        }
+
+        .tab-content.active {
+            display: block;
+        }
+
+        .form-group {
+            margin-bottom: 15px;
+        }
+
+        label {
+            display: block;
+            margin-bottom: 5px;
+            color: #333;
+            font-weight: 500;
+            font-size: 14px;
+        }
+
+        input {
+            width: 100%;
+            padding: 10px;
+            border: 1px solid #ddd;
+            border-radius: 5px;
+            font-size: 14px;
+            transition: border-color 0.3s;
+        }
+
+        input:focus {
+            outline: none;
+            border-color: #667eea;
+            box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.1);
+        }
+
+        button {
+            width: 100%;
+            padding: 10px;
+            background: #667eea;
+            color: white;
+            border: none;
+            border-radius: 5px;
+            font-size: 14px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: background 0.3s;
+        }
+
+        button:hover {
+            background: #5568d3;
+        }
+
+        button:active {
+            transform: scale(0.98);
+        }
+
+        .message {
+            padding: 12px;
+            margin-top: 15px;
+            border-radius: 5px;
+            font-size: 14px;
+            display: none;
+        }
+
+        .message.success {
+            background: #c8e6c9;
+            color: #2e7d32;
+            display: block;
+        }
+
+        .message.error {
+            background: #ffcdd2;
+            color: #c62828;
+            display: block;
+        }
+
+        .message.info {
+            background: #bbdefb;
+            color: #1565c0;
+            display: block;
+        }
+
+        .dashboard {
+            display: none;
+        }
+
+        .dashboard.active {
+            display: block;
+        }
+
+        .dashboard h2 {
+            color: #333;
+            margin-bottom: 15px;
+        }
+
+        .user-info {
+            background: #f5f5f5;
+            padding: 15px;
+            border-radius: 5px;
+            margin-bottom: 15px;
+            font-size: 14px;
+        }
+
+        .user-info p {
+            margin: 5px 0;
+            color: #666;
+        }
+
+        .vulnerability-warning {
+            background: #fff3cd;
+            border-left: 4px solid #ffc107;
+            padding: 12px;
+            margin: 15px 0;
+            border-radius: 3px;
+            font-size: 12px;
+            color: #856404;
+        }
+
+        .password-hint {
+            font-size: 12px;
+            color: #999;
+            margin-top: 5px;
+        }
+
+        .helper-section {
+            background: #f0f0f0;
+            padding: 15px;
+            border-radius: 5px;
+            margin-top: 20px;
+        }
+
+        .helper-section h3 {
+            font-size: 14px;
+            margin-bottom: 10px;
+            color: #333;
+        }
+
+        .helper-section button {
+            background: #999;
+            font-size: 12px;
+            padding: 8px;
+            margin: 5px 0;
+        }
+
+        .helper-section button:hover {
+            background: #777;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>🔓 AuthX - Break the Login</h1>
+            <p>⚠️ Version 1.0 - VULNERABLE (Intentional)</p>
+        </div>
+
+        <div class="tabs">
+            <button class="tab-btn active" onclick="switchTab('login')">Login</button>
+            <button class="tab-btn" onclick="switchTab('register')">Register</button>
+            <button class="tab-btn" onclick="switchTab('forgot')">Forgot Password</button>
+        </div>
+
+        <!-- LOGIN TAB -->
+        <div id="login" class="tab-content active">
+            <form onsubmit="login(event)">
+                <div class="form-group">
+                    <label for="login_username">Username</label>
+                    <input type="text" id="login_username" required>
+                </div>
+                <div class="form-group">
+                    <label for="login_password">Password</label>
+                    <input type="password" id="login_password" required>
+                </div>
+                <button type="submit">Login</button>
+                <div id="login_message" class="message"></div>
+            </form>
+
+            <div class="vulnerability-warning">
+                <strong>🔴 V1 Vulnerabilities:</strong><br>
+                • No rate limiting - Try unlimited login attempts<br>
+                • Different error messages (User not found vs Wrong password)<br>
+                • MD5 password hashing<br>
+                • Sessions last 30 days<br>
+                • Weak password policy (min 3 chars)
+            </div>
+
+            <div class="helper-section">
+                <h3>🧪 Test Accounts (for demo):</h3>
+                <button type="button" onclick="testLogin('admin', 'test')">Test: admin / test</button>
+                <button type="button" onclick="testLogin('user123', 'pass')">Test: user123 / pass</button>
+                <p style="font-size: 11px; margin-top: 10px; color: #666;">Create these with the Register tab first</p>
+            </div>
+        </div>
+
+        <!-- REGISTER TAB -->
+        <div id="register" class="tab-content">
+            <form onsubmit="register(event)">
+                <div class="form-group">
+                    <label for="reg_username">Username</label>
+                    <input type="text" id="reg_username" required>
+                </div>
+                <div class="form-group">
+                    <label for="reg_email">Email</label>
+                    <input type="email" id="reg_email" required>
+                </div>
+                <div class="form-group">
+                    <label for="reg_password">Password</label>
+                    <input type="password" id="reg_password" required>
+                    <div class="password-hint">Min 3 characters (WEAK!)</div>
+                </div>
+                <button type="submit">Register</button>
+                <div id="register_message" class="message"></div>
+            </form>
+
+            <div class="vulnerability-warning">
+                <strong>🔴 V1 Vulnerabilities:</strong><br>
+                • Passwords only need 3+ characters<br>
+                • No complexity requirements<br>
+                • MD5 hashing (deprecated, easily crackable)<br>
+                • Enum error if user exists
+            </div>
+        </div>
+
+        <!-- FORGOT PASSWORD TAB -->
+        <div id="forgot" class="tab-content">
+            <form onsubmit="forgotPassword(event)">
+                <div class="form-group">
+                    <label for="forgot_email">Email</label>
+                    <input type="email" id="forgot_email" required>
+                </div>
+                <button type="submit">Send Reset Link</button>
+                <div id="forgot_message" class="message"></div>
+            </form>
+
+            <div class="vulnerability-warning">
+                <strong>🔴 V1 Vulnerabilities:</strong><br>
+                • Reset token is just the user ID<br>
+                • Token can be reused infinitely<br>
+                • Token never expires<br>
+                • Token is predictable
+            </div>
+
+            <div id="reset_form_container" style="display: none; margin-top: 20px; padding-top: 20px; border-top: 1px solid #eee;">
+                <h3 style="margin-bottom: 15px;">Reset Password</h3>
+                <form onsubmit="resetPassword(event)">
+                    <div class="form-group">
+                        <label for="reset_token">Reset Token</label>
+                        <input type="text" id="reset_token" required placeholder="Paste token from link">
+                    </div>
+                    <div class="form-group">
+                        <label for="reset_password">New Password</label>
+                        <input type="password" id="reset_password" required>
+                        <div class="password-hint">Min 3 characters (WEAK!)</div>
+                    </div>
+                    <button type="submit">Reset Password</button>
+                    <div id="reset_message" class="message"></div>
+                </form>
+            </div>
+        </div>
+
+        <!-- DASHBOARD (appears after login) -->
+        <div id="dashboard" class="dashboard">
+            <h2>Welcome!</h2>
+            <div id="user_info" class="user-info"></div>
+            <button onclick="logout()">Logout</button>
+            <div id="logout_message" class="message"></div>
+        </div>
+    </div>
+
+    <script>
+        let currentSessionId = null;
+
+        function switchTab(tab) {
+            document.querySelectorAll('.tab-content').forEach(el => el.classList.remove('active'));
+            document.querySelectorAll('.tab-btn').forEach(el => el.classList.remove('active'));
+            document.getElementById(tab).classList.add('active');
+            document.querySelector(`button[onclick="switchTab('${tab}')"]`).classList.add('active');
+        }
+
+        async function register(e) {
+            e.preventDefault();
+            const username = document.getElementById('reg_username').value;
+            const email = document.getElementById('reg_email').value;
+            const password = document.getElementById('reg_password').value;
+
+            try {
+                const response = await fetch('http://localhost:3001/api/register', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ username, email, password })
+                });
+
+                const data = await response.json();
+                const msgEl = document.getElementById('register_message');
+
+                if (response.ok) {
+                    msgEl.className = 'message success';
+                    msgEl.textContent = '✓ Registration successful! You can now login.';
+                    document.getElementById('register').reset();
+                } else {
+                    msgEl.className = 'message error';
+                    msgEl.textContent = '✗ ' + (data.error || 'Registration failed');
+                }
+            } catch (err) {
+                showMessage('register_message', 'error', 'Connection error: ' + err.message);
+            }
+        }
+
+        async function login(e) {
+            e.preventDefault();
+            const username = document.getElementById('login_username').value;
+            const password = document.getElementById('login_password').value;
+
+            try {
+                const response = await fetch('http://localhost:3001/api/login', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    credentials: 'include',
+                    body: JSON.stringify({ username, password })
+                });
+
+                const data = await response.json();
+                const msgEl = document.getElementById('login_message');
+
+                if (response.ok) {
+                    currentSessionId = data.sessionId;
+                    document.getElementById('login').style.display = 'none';
+                    document.getElementById('register').style.display = 'none';
+                    document.getElementById('forgot').style.display = 'none';
+                    document.getElementById('dashboard').classList.add('active');
+                    
+                    document.getElementById('user_info').innerHTML = `
+                        <p><strong>Username:</strong> ${data.user.username}</p>
+                        <p><strong>Email:</strong> ${data.user.email}</p>
+                        <p><strong>Session ID:</strong> <code style="font-size: 11px; word-break: break-all;">${data.sessionId}</code></p>
+                        <p style="margin-top: 10px; font-size: 12px; color: #d32f2f;">
+                            ⚠️ Session ID exposed in response!<br>
+                            Session lasts 30 days - very long!
+                        </p>
+                    `;
+                } else {
+                    msgEl.className = 'message error';
+                    msgEl.textContent = '✗ ' + (data.error || 'Login failed');
+                    // Different messages allow user enumeration!
+                }
+            } catch (err) {
+                showMessage('login_message', 'error', 'Connection error: ' + err.message);
+            }
+        }
+
+        async function logout() {
+            try {
+                const response = await fetch('http://localhost:3001/api/logout', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ sessionId: currentSessionId })
+                });
+
+                if (response.ok) {
+                    document.getElementById('dashboard').classList.remove('active');
+                    document.getElementById('login').style.display = 'block';
+                    document.getElementById('register').style.display = 'block';
+                    document.getElementById('forgot').style.display = 'block';
+                    document.getElementById('login_username').value = '';
+                    document.getElementById('login_password').value = '';
+                    showMessage('logout_message', 'success', 'Logged out successfully');
+                }
+            } catch (err) {
+                showMessage('logout_message', 'error', 'Logout error: ' + err.message);
+            }
+        }
+
+        async function forgotPassword(e) {
+            e.preventDefault();
+            const email = document.getElementById('forgot_email').value;
+
+            try {
+                const response = await fetch('http://localhost:3001/api/forgot-password', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ email })
+                });
+
+                const data = await response.json();
+                
+                showMessage('forgot_message', 'success', data.message);
+                document.getElementById('reset_form_container').style.display = 'block';
+
+                if (data.resetLink) {
+                    showMessage('forgot_message', 'info', 
+                        `Token from reset link: ${data.resetLink.split('token=')[1]}`);
+                }
+            } catch (err) {
+                showMessage('forgot_message', 'error', 'Error: ' + err.message);
+            }
+        }
+
+        async function resetPassword(e) {
+            e.preventDefault();
+            const token = document.getElementById('reset_token').value;
+            const newPassword = document.getElementById('reset_password').value;
+
+            try {
+                const response = await fetch('http://localhost:3001/api/reset-password', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ token, newPassword })
+                });
+
+                const data = await response.json();
+
+                if (response.ok) {
+                    showMessage('reset_message', 'success', 'Password reset successfully!');
+                    document.getElementById('reset_password').value = '';
+                    document.getElementById('reset_token').value = '';
+                } else {
+                    showMessage('reset_message', 'error', data.error || 'Reset failed');
+                }
+            } catch (err) {
+                showMessage('reset_message', 'error', 'Error: ' + err.message);
+            }
+        }
+
+        function testLogin(username, password) {
+            document.getElementById('login_username').value = username;
+            document.getElementById('login_password').value = password;
+            switchTab('login');
+        }
+
+        function showMessage(elementId, type, text) {
+            const el = document.getElementById(elementId);
+            el.className = `message ${type}`;
+            el.textContent = text;
+        }
+    </script>
+</body>
+</html>

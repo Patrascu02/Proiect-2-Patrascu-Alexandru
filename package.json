@@ -1,0 +1,19 @@
+{
+  "name": "authx-break-login",
+  "version": "1.0.0",
+  "description": "Break the Login - Authentication Security Project",
+  "main": "server-v1.js",
+  "scripts": {
+    "start:v1": "node server-v1.js",
+    "start:v2": "node server-v2.js"
+  },
+  "dependencies": {
+    "express": "^4.18.2",
+    "sqlite3": "^5.1.6",
+    "jwt": "^0.0.3",
+    "jsonwebtoken": "^9.0.0",
+    "body-parser": "^1.20.2",
+    "cors": "^2.8.5",
+    "uuid": "^9.0.0"
+  }
+}
