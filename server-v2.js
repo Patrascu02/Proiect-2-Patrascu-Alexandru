@@ -294,7 +294,7 @@ app.get('/api/user', (req, res) => {
     return res.status(401).json({ error: 'No session' });
   }
 
-  db.get('SELECT * FROM sessions WHERE id = ? AND expires_at > datetime("now")', [sessionId], (err, session) => {
+  db.get('SELECT * FROM sessions WHERE id = ?', [sessionId], (err, session) => {
     if (err || !session) {
       res.clearCookie('sessionId', { path: '/' });
       return res.status(401).json({ error: 'Invalid or expired session' });
@@ -350,7 +350,7 @@ app.post('/api/reset-password', async (req, res) => {
 
   try {
     db.get(
-      'SELECT * FROM password_resets WHERE token = ? AND expires_at > datetime("now") AND used = 0',
+      'SELECT * FROM password_resets WHERE token = ? AND used = 0',
       [token],
       async (err, reset) => {
         if (err || !reset) {
