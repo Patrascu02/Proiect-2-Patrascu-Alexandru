@@ -390,7 +390,7 @@ const checkBcrypt = () => {
     require('bcryptjs');
     return true;
   } catch (e) {
-    console.error('⚠️  bcryptjs not installed. Install with: npm install bcryptjs');
+    console.error('  bcryptjs not installed. Install with: npm install bcryptjs');
     return false;
   }
 };
