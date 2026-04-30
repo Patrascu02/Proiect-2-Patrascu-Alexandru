@@ -145,12 +145,12 @@ app.post('/api/login', (req, res) => {
           httpOnly: false,  
           secure: false,    
           sameSite: 'Lax', 
-          maxAge: 30 * 24 * 60 * 60 * 1000 // 30 zile - prea mult!
+          maxAge: 30 * 24 * 60 * 60 * 1000 
         });
 
         res.json({ 
           message: 'Login successful',
-          sessionId: sessionId, // Token expus în response!
+          sessionId: sessionId, 
           user: { id: user.id, username: user.username, email: user.email }
         });
       }
