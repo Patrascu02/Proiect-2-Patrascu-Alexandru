@@ -1,13 +1,4 @@
-/**
- * PROIECT 2: BREAK THE LOGIN - VERSIUNEA VULNERABILĂ (V1)
- * * VULNERABILITĂȚI INTENȚIONATE:
- * 1. Weak password policy - Parole foarte scurte acceptate
- * 2. Insecure password storage - MD5 hash slab
- * 3. No rate limiting - Brute force nelimitat
- * 4. User enumeration - Mesaje diferite pentru user inexistent vs parolă greșită
- * 5. Insecure session management - Cookie fără Secure/HttpOnly/SameSite, expirare lungă
- * 6. Insecure password reset - Token predictibil, reutilizabil, fără expirare
- */
+
 
 const express = require('express');
 const sqlite3 = require('sqlite3').verbose();

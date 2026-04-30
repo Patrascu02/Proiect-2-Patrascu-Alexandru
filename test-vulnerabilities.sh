@@ -1,8 +1,7 @@
 #!/bin/bash
 
 # ===== AuthX - Vulnerability Testing Script =====
-# This script helps test the vulnerabilities in both V1 and V2
-# Usage: bash test-vulnerabilities.sh
+
 
 set -e
 

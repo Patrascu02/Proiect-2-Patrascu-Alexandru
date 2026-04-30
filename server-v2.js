@@ -1,13 +1,4 @@
-/**
- * PROIECT 2: BREAK THE LOGIN - VERSIUNEA FIXATĂ (V2)
- * * FIXES IMPLEMENTATE:
- * 1. Strong password policy - Lungime minimă 12, complexitate, mesaj generic
- * 2. Secure password storage - bcrypt cu salt
- * 3. Rate limiting - Rate limiting pe login, blocare temporară
- * 4. No user enumeration - Mesaj generic "Invalid credentials"
- * 5. Secure session management - HttpOnly, Secure, SameSite cookies, expirare scurtă
- * 6. Secure password reset - Token random, one-time, cu expirare scurtă
- */
+
 
 const express = require('express');
 const sqlite3 = require('sqlite3').verbose();
